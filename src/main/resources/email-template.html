@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Application Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f8fc;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .header {
+            background-color: #4F46E5;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 20px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .content h2 {
+            margin-top: 0;
+        }
+        .status {
+            padding: 10px 15px;
+            color: white;
+            display: inline-block;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.accepted {
+            background-color: #16a34a;
+        }
+        .status.rejected {
+            background-color: #dc2626;
+        }
+        .footer {
+            padding: 15px;
+            text-align: center;
+            font-size: 13px;
+            color: #888;
+            background-color: #f1f1f1;
+        }
+        a {
+            color: #4F46E5;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        Next Career - Application Update
+    </div>
+    <div class="content">
+        <h2>Hello {NAME},</h2>
+        <p>We wanted to let you know that your application status has been updated.</p>
+        <p>Your current application status is:
+            <span class="status {STATUS_CLASS}">{STATUS}</span>
+        </p>
+        <p>Thank you for applying. We'll keep you posted with future updates.</p>
+        <p style="margin-top: 30px;">Best regards,<br><strong>Team Next Career</strong></p>
+    </div>
+    <div class="footer">
+        &copy; 2025 Job Portal. All rights reserved. | <a href="https://your-company.com">Visit Website</a>
+    </div>
+</div>
+</body>
+</html>
