@@ -24,7 +24,7 @@ import java.util.List;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-    @Value("${frontend_url}")
+    @Value("${frontend.url}")
     private String frontend_url;
 
     private final JwtAuthFilter jwtAuthFilter;
