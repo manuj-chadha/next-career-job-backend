@@ -24,11 +24,18 @@ public class CloudinaryService {
         ));
     }
 
-    public String uploadFile(MultipartFile file) throws IOException {
+    public String uploadPdf(MultipartFile file) throws IOException {
         Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
                 ObjectUtils.asMap(
                         "resource_type", "image",  // Trick Cloudinary into treating PDFs as images
                         "format", "pdf"
+                ));
+        return uploadResult.get("secure_url").toString();
+    }
+    public String uploadFile(MultipartFile file) throws IOException {
+        Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
+                ObjectUtils.asMap(
+                        "resource_type", "image"// Trick Cloudinary into treating PDFs as images
                 ));
         return uploadResult.get("secure_url").toString();
     }

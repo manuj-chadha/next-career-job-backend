@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MultipartFile;
 
 
 //@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
@@ -111,6 +112,31 @@ public class UserController {
         } catch (Exception e) {
             // Log generic error
             logger.error("Error updating user profile: {}", updateRequest.getEmail(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Invalid request data"));
+        }
+    }
+
+    @PutMapping("/profile/picture/update")
+    public ResponseEntity<?> updatePic(@RequestParam("file") MultipartFile file, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        try {
+            // Proceed with the update
+            User updatedUser = userService.updatePicture(file, userDetails.getUsername());
+
+            // Response structure
+            Map<String, Object> response = Map.of(
+                    "success", true,
+                    "message", "User updated successfully",
+                    "data", updatedUser,
+                    "timestamp", LocalDateTime.now()
+            );
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", "User not found"));
+        } catch (Exception e) {
+            // Log generic error
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "Invalid request data"));
         }

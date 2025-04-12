@@ -10,6 +10,7 @@ import com.jobportal.backend.repositories.UserRepo;
 import com.jobportal.backend.utils.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
@@ -123,7 +124,7 @@ public class UserService {
 
             if (updateRequest.getResume() != null && !updateRequest.getResume().isEmpty()) {
                 profile.setResumeOriginalName(updateRequest.getResume().getOriginalFilename());
-                String resumeUrl = cloudinaryService.uploadFile(updateRequest.getResume());
+                String resumeUrl = cloudinaryService.uploadPdf(updateRequest.getResume());
                 profile.setResume(resumeUrl);
             }
             else if (updateRequest.getResumeUrl() != null && !updateRequest.getResumeUrl().isEmpty()) {
@@ -148,6 +149,30 @@ public class UserService {
         User user=userRepository.findByEmail(email).orElse(null);
         if(user==null) return false;
         return true;
+    }
+
+    public User updatePicture(MultipartFile file, String username) throws Exception {
+        User user=findByEmail(username);
+        if(user==null) throw new UsernameNotFoundException("User unauthorised.");
+
+        try {
+            Profile profile = user.getProfile();
+            if (profile == null) {
+                profile = new Profile();
+            }
+            if(!file.isEmpty()){
+                String profileUrl = cloudinaryService.uploadFile(file);
+                profile.setProfilePhoto(profileUrl);
+            }
+            user.setProfile(profile);
+            saveUser(user);
+
+            return user;
+        } catch (IOException e) {
+            throw new Exception("File upload failed: " + e.getMessage());
+        } catch (Exception e) {
+            throw new Exception("Error updating user: " + e.getMessage());
+        }
     }
 }
 
