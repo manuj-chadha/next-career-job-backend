@@ -1,9 +1,11 @@
 package com.jobportal.backend.services;
 
+import com.jobportal.backend.config.CustomUserDetails;
 import com.jobportal.backend.dto.AuthResponse;
 import com.jobportal.backend.dto.RegisterRequest;
 import com.jobportal.backend.dto.UpdateUserRequest;
 import com.jobportal.backend.dto.UserDTO;
+import com.jobportal.backend.entity.Job;
 import com.jobportal.backend.entity.Profile;
 import com.jobportal.backend.entity.User;
 import com.jobportal.backend.repositories.UserRepo;
@@ -17,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -174,5 +177,21 @@ public class UserService {
             throw new Exception("Error updating user: " + e.getMessage());
         }
     }
-}
 
+    public UserDTO saveJob(ObjectId jobId, CustomUserDetails userDetails) {
+        User user = findByEmail(userDetails.getUsername());
+        if (user == null) {
+            throw new UsernameNotFoundException("Invalid access");
+        }
+        if (user.getSavedJobs() == null) {
+            user.setSavedJobs(new ArrayList<>());
+        }
+        List<ObjectId> savedJobs = user.getSavedJobs();
+        if (!savedJobs.contains(jobId)) {
+            savedJobs.add(jobId);
+            saveUser(user);
+        }
+        return UserDTO.fromUser(user);
+    }
+
+}

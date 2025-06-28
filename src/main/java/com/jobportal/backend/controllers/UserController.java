@@ -2,10 +2,7 @@ package com.jobportal.backend.controllers;
 
 import com.jobportal.backend.config.CustomUserDetails;
 import com.jobportal.backend.config.JwtAuthFilter;
-import com.jobportal.backend.dto.AuthResponse;
-import com.jobportal.backend.dto.LoginRequest;
-import com.jobportal.backend.dto.RegisterRequest;
-import com.jobportal.backend.dto.UpdateUserRequest;
+import com.jobportal.backend.dto.*;
 import com.jobportal.backend.entity.User;
 import com.jobportal.backend.services.JwtService;
 import com.jobportal.backend.services.UserService;
@@ -51,6 +48,7 @@ public class UserController {
     public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
         try {
             AuthResponse authResponse = userService.loginUser(loginRequest.getEmail(), loginRequest.getPassword(), loginRequest.getRole());
+            System.out.println(authResponse.getUserDTO().getSavedJobs());
             return ResponseEntity.ok(authResponse);
         } catch (IllegalArgumentException e) {
             // Send error message with status 401
@@ -139,6 +137,22 @@ public class UserController {
             // Log generic error
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "Invalid request data"));
+        }
+    }
+
+    @GetMapping("/save/{jobId}")
+    public ResponseEntity<?> saveJob(@PathVariable String jobId, @AuthenticationPrincipal CustomUserDetails userDetails){
+        try {
+            UserDTO user=userService.saveJob(new ObjectId(jobId), userDetails);
+            System.out.println("UserDTO before sending: " + user);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "user", user
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Something went wrong, please try again."));
         }
     }
 

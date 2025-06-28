@@ -1,5 +1,6 @@
 package com.jobportal.backend.services;
 
+import com.jobportal.backend.config.CustomUserDetails;
 import com.jobportal.backend.dto.JobDto;
 import com.jobportal.backend.dto.ReturnJobDto;
 import com.jobportal.backend.entity.Company;
@@ -25,8 +26,7 @@ import java.util.stream.Collectors;
 @Transactional
 @RequiredArgsConstructor
 public class JobService  {
-
-
+    private final UserService userService;
     private final JobRepository jobRepository;
     private final UserRepo userRepo;
     private final CompanyRepository companyRepository;
@@ -130,4 +130,13 @@ public class JobService  {
                 .collect(Collectors.toList());
     }
 
+    public List<ReturnJobDto> savedJobs(CustomUserDetails userDetails) {
+        User user=userService.findByEmail(userDetails.getUsername());
+        if(user==null) throw new UsernameNotFoundException("Invalid access.");
+        List<ReturnJobDto> list = user.getSavedJobs()
+                .stream()
+                .map(id -> ReturnJobDto.fromEntity(getJobById(id.toHexString())))
+                .toList();
+        return list;
+    }
 }

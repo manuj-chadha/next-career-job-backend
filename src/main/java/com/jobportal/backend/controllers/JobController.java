@@ -1,5 +1,6 @@
 package com.jobportal.backend.controllers;
 
+import com.jobportal.backend.config.CustomUserDetails;
 import com.jobportal.backend.dto.JobDto;
 import com.jobportal.backend.dto.ReturnJobDto;
 import com.jobportal.backend.entity.Job;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -170,12 +172,35 @@ public class JobController {
             ));
         }
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteJob(@PathVariable ObjectId id) {
         try {
             jobService.deleteJob(id);
             return ResponseEntity.ok(Map.of(
                     "message", "Job deleted successfully.",
+                    "success", true
+            ));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "message", "Job not found.",
+                    "success", false
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "message", "Error deleting job.",
+                    "success", false
+            ));
+        }
+    }
+
+    @GetMapping("/savedJobs")
+    public ResponseEntity<?> getSavedJobs(@AuthenticationPrincipal CustomUserDetails userDetails){
+        try {
+            List<ReturnJobDto> savedJobs=jobService.savedJobs(userDetails);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Job saved successfully.",
+                    "savedJobs", savedJobs,
                     "success", true
             ));
         } catch (NoSuchElementException e) {

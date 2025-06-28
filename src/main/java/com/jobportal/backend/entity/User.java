@@ -5,6 +5,8 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -23,13 +25,12 @@ public class User {
 
     private String password;
 
-//    private Role role;
     private String role;
 
     private Profile profile;
 
-    @Getter
-    private boolean active = true; // Add this field
+    private List<ObjectId> savedJobs;
+
+    private boolean active = true;
 
 }
-
