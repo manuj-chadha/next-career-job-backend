@@ -90,13 +90,18 @@ public class UserService {
     }
 
     public AuthResponse loginUser(String email, String password, String role) {
-        User user= userRepository.findByEmail(email)
-                .filter(u -> passwordEncoder.matches(password, u.getPassword()))
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Incorrect email or password."));
-        if (!role.equalsIgnoreCase(user.getRole()))
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new IllegalArgumentException("Incorrect email or password.");
+        }
+
+        if (!role.equalsIgnoreCase(user.getRole())) {
             throw new IllegalArgumentException("Incorrect role specified.");
+        }
+
         String jwtToken = jwtService.generateToken(user);
-        System.out.println(jwtToken);
         return new AuthResponse(jwtToken, UserDTO.fromUser(user));
     }
 
