@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,6 +23,7 @@ import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
@@ -38,12 +40,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
         final String jwtToken;
         final String userEmail;
-
+        logger.info(request.getServletPath());
         final Set<String> PUBLIC_PATHS = Set.of(
-                "/users/login", "/users/register", "/companies/register", "/ping"
+                "/api/users/login", "/api/users/register", "/api/companies/register"
         );
 
-        if (PUBLIC_PATHS.contains(request.getServletPath())) {
+        if (PUBLIC_PATHS.contains(request.getRequestURI())) {
             chain.doFilter(request, response);
             return;
         }

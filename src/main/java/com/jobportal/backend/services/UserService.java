@@ -117,9 +117,11 @@ public class UserService {
                 profile = new Profile();
             }
 
-            // Update email only if provided
-            if (updateRequest.getEmail() != null && !updateRequest.getEmail().isEmpty()) {
-                user.setEmail(updateRequest.getEmail());
+            if (updateRequest.getFullname() != null && !updateRequest.getFullname().isEmpty()) {
+                user.setFullname(updateRequest.getFullname());
+            }
+            if(updateRequest.getPhoneNumber()!=null && !updateRequest.getPhoneNumber().isEmpty()){
+                user.setPhoneNumber(updateRequest.getPhoneNumber());
             }
 
             // Update profile details

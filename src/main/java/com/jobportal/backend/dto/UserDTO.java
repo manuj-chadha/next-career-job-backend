@@ -29,7 +29,9 @@ public class UserDTO {
                 user.getRole(),
                 user.getProfile(),
                 user.isActive(),
-                user.getSavedJobs().stream().map(x -> x.toHexString()).toList()
+                user.getSavedJobs() != null
+                        ? user.getSavedJobs().stream().map(ObjectId::toHexString).toList()
+                        : List.of()
         );
     }
 }

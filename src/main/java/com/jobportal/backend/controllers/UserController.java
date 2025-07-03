@@ -48,7 +48,6 @@ public class UserController {
     public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
         try {
             AuthResponse authResponse = userService.loginUser(loginRequest.getEmail(), loginRequest.getPassword(), loginRequest.getRole());
-            System.out.println(authResponse.getUserDTO().getSavedJobs());
             return ResponseEntity.ok(authResponse);
         } catch (IllegalArgumentException e) {
             // Send error message with status 401
@@ -86,7 +85,7 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of("message", "You can only update your own profile"));
             }
-
+            System.out.println(updateRequest);
             // Proceed with the update
             User updatedUser = userService.updateUser(updateRequest);
 
@@ -94,7 +93,7 @@ public class UserController {
             Map<String, Object> response = Map.of(
                     "success", true,
                     "message", "User updated successfully",
-                    "data", updatedUser,
+                    "data", UserDTO.fromUser(updatedUser),
                     "timestamp", LocalDateTime.now()
             );
 

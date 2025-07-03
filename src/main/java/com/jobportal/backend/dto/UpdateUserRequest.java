@@ -17,8 +17,10 @@ import java.util.List;
 public class UpdateUserRequest {
     private String email;
     private String bio;
+    private String fullname;
+    private String phoneNumber;
     private List<String> skills;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String resumeUrl;
-    private MultipartFile resume; 
+    private MultipartFile resume;
 }
