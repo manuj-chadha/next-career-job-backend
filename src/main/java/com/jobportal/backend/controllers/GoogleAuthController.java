@@ -1,6 +1,7 @@
 package com.jobportal.backend.controllers;
 
 import com.jobportal.backend.dto.UserDTO;
+import com.jobportal.backend.entity.Profile;
 import com.jobportal.backend.entity.User;
 import com.jobportal.backend.repositories.UserRepo;
 import com.jobportal.backend.services.JwtService;
@@ -40,6 +41,7 @@ public class GoogleAuthController {
     public ResponseEntity<?> googleCallbackMethod(@RequestParam("code") String code,
                                                   @RequestParam("role") String role) {
         try {
+            // Exchange code for access token
             String tokenEndpoint = "https://oauth2.googleapis.com/token";
 
             MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
@@ -53,34 +55,53 @@ public class GoogleAuthController {
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
 
-            ResponseEntity<Map> response = restTemplate.postForEntity(tokenEndpoint, request, Map.class);
-            String idToken = (String) response.getBody().get("id_token");
+            ResponseEntity<Map> tokenResponse = restTemplate.postForEntity(tokenEndpoint, request, Map.class);
 
-            String userInfoUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken;
-            ResponseEntity<Map> userInfoResponse = restTemplate.getForEntity(userInfoUrl, Map.class);
-
-            if (userInfoResponse.getStatusCode() != HttpStatus.OK) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Google ID token.");
+            if (tokenResponse.getStatusCode() != HttpStatus.OK || !tokenResponse.getBody().containsKey("access_token")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Failed to retrieve access token from Google.");
             }
 
-            String email = (String) userInfoResponse.getBody().get("email");
+            String accessToken = (String) tokenResponse.getBody().get("access_token");
 
+            // Fetch user profile using access token
+            HttpHeaders userInfoHeaders = new HttpHeaders();
+            userInfoHeaders.setBearerAuth(accessToken);
+            HttpEntity<Void> userInfoRequest = new HttpEntity<>(userInfoHeaders);
+
+            ResponseEntity<Map> userInfoResponse = restTemplate.exchange(
+                    "https://www.googleapis.com/oauth2/v2/userinfo",
+                    HttpMethod.GET,
+                    userInfoRequest,
+                    Map.class
+            );
+
+            if (userInfoResponse.getStatusCode() != HttpStatus.OK) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Failed to fetch user info from Google.");
+            }
+
+            Map<String, Object> userInfo = userInfoResponse.getBody();
+            String email = (String) userInfo.get("email");
+            String name = (String) userInfo.get("name");
+            String picture = (String) userInfo.get("picture");
+
+            // Check if user already exists
             User user = userRepo.findByEmail(email).orElse(null);
 
             if (user == null) {
+                Profile profile = new Profile();
+                if (picture != null) profile.setProfilePhoto(picture);
+
                 user = User.builder()
                         .email(email)
+                        .fullname(name)
                         .password(passwordEncoder.encode(UUID.randomUUID().toString()))
-                        .fullname(email.replace("@gmail.com",""))
                         .role(role.toUpperCase())
+                        .profile(profile)
                         .active(true)
                         .build();
+
                 user = userRepo.save(user);
             }
-
-            UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-            SecurityContextHolder.getContext().setAuthentication(authToken);
 
             String jwt = jwtService.generateToken(user);
 
