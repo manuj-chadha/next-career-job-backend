@@ -36,7 +36,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/users/register", "/users/login", "/companies/register", "/ping", "/auth/google/callback").permitAll()
+                        .requestMatchers("/users/register", "/users/login", "/companies/register", "/ping", "/auth/google/callback", "/scraper/run").permitAll()
                         .requestMatchers("/users/logout").authenticated()
                         .anyRequest().authenticated()
                 )

@@ -11,6 +11,7 @@ import com.jobportal.backend.repositories.JobRepository;
 import com.jobportal.backend.repositories.UserRepo;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,12 +35,12 @@ public class JobService  {
     public List<ReturnJobDto> getAllJobs(String keyword) {
         if (keyword != null && !keyword.isEmpty()) {
             // Search jobs by title or description using keyword
-            return jobRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword).stream()
+            return jobRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword, Sort.by(Sort.Direction.DESC, "createdAt")).stream()
                     .map(ReturnJobDto::fromEntity)
                     .collect(Collectors.toList());
         }
         // Fetch all jobs if no keyword given
-        return jobRepository.findAll().stream()
+        return jobRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).stream()
                 .map(ReturnJobDto::fromEntity)
                 .collect(Collectors.toList());
     }
