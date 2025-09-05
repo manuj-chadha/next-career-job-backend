@@ -8,6 +8,7 @@ import com.jobportal.backend.entity.Job;
 import com.jobportal.backend.services.JobService;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -106,17 +107,18 @@ public class JobController {
 
     // Get all jobs for students with optional keyword search
     @GetMapping("/get")
-    public ResponseEntity<?> getAllJobs(@RequestParam(required = false) String keyword) {
+    public ResponseEntity<?> getAllJobs(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
         try {
-            List<JobListingDto> jobs = jobService.getAllJobs(keyword);
+            Page<JobListingDto> jobs = jobService.getAllJobs(keyword, page, size);
             return ResponseEntity.ok(Map.of(
-                    "jobs", jobs,
+                    "jobs", jobs.getContent(),
+                    "totalPages", jobs.getTotalPages(),
+                    "totalElements", jobs.getTotalElements(),
                     "success", true
-            ));
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-                    "message", "Jobs not found.",
-                    "success", false
             ));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
@@ -125,6 +127,7 @@ public class JobController {
             ));
         }
     }
+
 
 
     // Get job by ID for students

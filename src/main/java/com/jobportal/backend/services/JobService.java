@@ -12,6 +12,9 @@ import com.jobportal.backend.repositories.JobRepository;
 import com.jobportal.backend.repositories.UserRepo;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -33,18 +36,19 @@ public class JobService  {
     private final UserRepo userRepo;
     private final CompanyRepository companyRepository;
 
-    public List<JobListingDto> getAllJobs(String keyword) {
+    public Page<JobListingDto> getAllJobs(String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
         if (keyword != null && !keyword.isEmpty()) {
-            // Search jobs by title or description using keyword
-            return jobRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword, Sort.by(Sort.Direction.DESC, "createdAt")).stream()
-                    .map(JobListingDto::fromEntity)
-                    .collect(Collectors.toList());
+            return jobRepository
+                    .findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword, pageable)
+                    .map(JobListingDto::fromEntity);
         }
-        // Fetch all jobs if no keyword given
-        return jobRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).stream()
-                .map(JobListingDto::fromEntity)
-                .collect(Collectors.toList());
+
+        return jobRepository.findAll(pageable)
+                .map(JobListingDto::fromEntity);
     }
+
 
 
     public Job getJobById(String id) {

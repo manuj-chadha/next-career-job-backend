@@ -13,16 +13,19 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 
-@Document(collection = "jobs")  // MongoDB collection
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+
+@Document(collection = "jobs")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EnableMongoAuditing
+@CompoundIndex(name = "loc_created_idx", def = "{'location': 1, 'createdAt': -1}")
 public class Job {
 
     @Id
-    private ObjectId id;  // MongoDB's ObjectId
+    private ObjectId id;
 
     @Field("title")
     private String title;
@@ -39,23 +42,27 @@ public class Job {
     @Field("experience")
     private Integer experience;
 
+    @Indexed   // Single-field index
     @Field("location")
     private String location;
 
+    @Indexed   // Single-field index
     @Field("jobType")
     private String jobType;
 
     @Field("position")
     private String position;
 
-    @DBRef  // Reference to another document
+    @DBRef
     private Company company;
 
-    @DBRef  // Reference to the User document
+    @DBRef
     private User createdBy;
+
+    @Indexed   // Helps with sorting/pagination
     @CreatedDate
     private Instant createdAt;
 
-    @DBRef(lazy = true)  // Lazy loading for applications
+    @DBRef(lazy = true)
     private List<Application> applications;
 }
