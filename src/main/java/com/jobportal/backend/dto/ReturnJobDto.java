@@ -1,18 +1,13 @@
 package com.jobportal.backend.dto;
-import com.jobportal.backend.entity.Application;
-import com.jobportal.backend.entity.Company;
+
 import com.jobportal.backend.entity.Job;
-import com.jobportal.backend.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Data
 @AllArgsConstructor
@@ -28,14 +23,14 @@ public class ReturnJobDto {
     private String jobType;
     private int experience;
     private String position;
-    private Company company;
-    private User createdBy;
+    private String companyName;
+    private String companyLogo;
+    private String companyDescription;
     private Instant createdAt;
-    private List<ApplicationDTO> applications;
 
     public static ReturnJobDto fromEntity(Job job) {
         return ReturnJobDto.builder()
-                .id(job.getId().toHexString()) // Convert ObjectId to String
+                .id(job.getId().toHexString())   // ObjectId -> String
                 .title(job.getTitle())
                 .description(job.getDescription())
                 .requirements(job.getRequirements())
@@ -44,12 +39,11 @@ public class ReturnJobDto {
                 .jobType(job.getJobType())
                 .experience(job.getExperience())
                 .position(job.getPosition())
-                .company(job.getCompany())
-                .createdBy(job.getCreatedBy())
+                .companyName(job.getCompany() != null ? job.getCompany().getName() : null)
+                .companyLogo(job.getCompany() != null ? job.getCompany().getLogo() : null)
+                .companyDescription(job.getCompany() != null ? job.getCompany().getDescription() : null)
                 .createdAt(job.getCreatedAt())
-                .applications(job.getApplications().stream().map(ApplicationDTO::fromEntity
-                ).collect(Collectors.toList()))
                 .build();
     }
-}
 
+}

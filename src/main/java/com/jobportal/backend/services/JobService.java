@@ -2,6 +2,7 @@ package com.jobportal.backend.services;
 
 import com.jobportal.backend.config.CustomUserDetails;
 import com.jobportal.backend.dto.JobDto;
+import com.jobportal.backend.dto.JobListingDto;
 import com.jobportal.backend.dto.ReturnJobDto;
 import com.jobportal.backend.entity.Company;
 import com.jobportal.backend.entity.Job;
@@ -32,16 +33,16 @@ public class JobService  {
     private final UserRepo userRepo;
     private final CompanyRepository companyRepository;
 
-    public List<ReturnJobDto> getAllJobs(String keyword) {
+    public List<JobListingDto> getAllJobs(String keyword) {
         if (keyword != null && !keyword.isEmpty()) {
             // Search jobs by title or description using keyword
             return jobRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword, Sort.by(Sort.Direction.DESC, "createdAt")).stream()
-                    .map(ReturnJobDto::fromEntity)
+                    .map(JobListingDto::fromEntity)
                     .collect(Collectors.toList());
         }
         // Fetch all jobs if no keyword given
         return jobRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).stream()
-                .map(ReturnJobDto::fromEntity)
+                .map(JobListingDto::fromEntity)
                 .collect(Collectors.toList());
     }
 

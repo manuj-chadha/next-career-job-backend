@@ -2,6 +2,7 @@ package com.jobportal.backend.controllers;
 
 import com.jobportal.backend.config.CustomUserDetails;
 import com.jobportal.backend.dto.JobDto;
+import com.jobportal.backend.dto.JobListingDto;
 import com.jobportal.backend.dto.ReturnJobDto;
 import com.jobportal.backend.entity.Job;
 import com.jobportal.backend.services.JobService;
@@ -107,7 +108,7 @@ public class JobController {
     @GetMapping("/get")
     public ResponseEntity<?> getAllJobs(@RequestParam(required = false) String keyword) {
         try {
-            List<ReturnJobDto> jobs = jobService.getAllJobs(keyword);
+            List<JobListingDto> jobs = jobService.getAllJobs(keyword);
             return ResponseEntity.ok(Map.of(
                     "jobs", jobs,
                     "success", true
