@@ -188,7 +188,6 @@ public class UserService {
     private String cleanGeminiJson(String raw) {
         if (raw == null) return "";
 
-        // Remove triple backticks and optional "json"
         return raw.replaceAll("(?s)```json", "")
                 .replaceAll("(?s)```", "")
                 .trim();
@@ -202,19 +201,15 @@ public class UserService {
             geminiJson=cleanGeminiJson(geminiJson);
             GeminiProfileData data = objectMapper.readValue(geminiJson, GeminiProfileData.class);
 
-            // Auto-fill user
             if (data.getFullname() != null && !data.getFullname().isEmpty()) user.setFullname(data.getFullname());
-            if (data.getEmail() != null && !data.getEmail().isEmpty()) user.setEmail(data.getEmail());
             if (data.getPhoneNumber() != null && !data.getPhoneNumber().isEmpty()) user.setPhoneNumber(data.getPhoneNumber());
 
-            // Auto-fill profile
             if (data.getSkills() != null && !data.getSkills().isEmpty()) profile.setSkills(data.getSkills());
             if (data.getBio() != null && !data.getBio().isEmpty()) profile.setBio(data.getBio());
             if (data.getExperience() != null) profile.setExperience(data.getExperience());
             if (data.getEducation() != null) profile.setEducation(data.getEducation());
 
         } catch (Exception ignored) {
-            // fail silently if Gemini fails
             System.out.println(ignored.getMessage());
             throw new RuntimeException(ignored.getMessage());
         }
