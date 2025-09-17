@@ -1,5 +1,6 @@
 package com.jobportal.backend.entity;
 
+import com.jobportal.backend.dto.GeminiProfileData;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,4 +21,7 @@ public class Profile {
     private Company company;
 
     private String profilePhoto = "";
+    private String resumeText;
+    private List<GeminiProfileData.Experience> experience;
+    private List<GeminiProfileData.Education> education;
 }

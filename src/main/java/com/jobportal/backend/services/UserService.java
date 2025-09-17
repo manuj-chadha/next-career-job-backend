@@ -1,15 +1,14 @@
 package com.jobportal.backend.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jobportal.backend.config.CustomUserDetails;
-import com.jobportal.backend.dto.AuthResponse;
-import com.jobportal.backend.dto.RegisterRequest;
-import com.jobportal.backend.dto.UpdateUserRequest;
-import com.jobportal.backend.dto.UserDTO;
+import com.jobportal.backend.dto.*;
 import com.jobportal.backend.entity.Job;
 import com.jobportal.backend.entity.Profile;
 import com.jobportal.backend.entity.User;
 import com.jobportal.backend.repositories.UserRepo;
 import com.jobportal.backend.utils.CloudinaryService;
+import com.jobportal.backend.utils.ResumeParser;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -28,17 +27,21 @@ public class UserService {
     private final JwtService jwtService;
     private final UserRepo userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final ResumeParser resumeParser;
+    private final GeminiService geminiService;
+    private final ObjectMapper objectMapper;
+
 
     public User findByEmail(String email){
         return userRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
     }
     public User registerUser(RegisterRequest registerRequest) throws Exception {
-        String fullname=registerRequest.getFullname();
-        String email=registerRequest.getEmail();
-        String phoneNumber=registerRequest.getPhoneNumber();
-        String password=registerRequest.getPassword();
-        String role=registerRequest.getRole();
-        MultipartFile file= registerRequest.getFile();
+        String fullname = registerRequest.getFullname();
+        String email = registerRequest.getEmail();
+        String phoneNumber = registerRequest.getPhoneNumber();
+        String password = registerRequest.getPassword();
+        String role = registerRequest.getRole();
+        MultipartFile resumeFile = registerRequest.getFile(); // renamed for clarity
 
         try {
             if (fullname.isEmpty() || email.isEmpty() || password.isEmpty()) {
@@ -51,21 +54,31 @@ public class UserService {
 
             String hashedPassword = passwordEncoder.encode(password);
 
+            // Upload profile photo if present
             String profilePhotoUrl = "";
-            if (file != null && !file.isEmpty()) {
-                profilePhotoUrl = cloudinaryService.uploadFile(file);
+            if (registerRequest.getFile() != null && !registerRequest.getFile().isEmpty()) {
+                profilePhotoUrl = cloudinaryService.uploadFile(registerRequest.getFile());
             }
+
+            String resumeUrl = "";
+            String resumeText = "";
+            String resumeOriginalName = "";
+            if (resumeFile != null && !resumeFile.isEmpty()) {
+                resumeOriginalName = resumeFile.getOriginalFilename();
+                resumeUrl = cloudinaryService.uploadPdf(resumeFile); // upload to Cloudinary
+                resumeText = resumeParser.parse(resumeFile);         // parse text
+            }
+
             Profile profile = Profile.builder()
                     .profilePhoto(profilePhotoUrl)
                     .bio("")
                     .skills(new ArrayList<>())
-                    .resume("")
-                    .resumeOriginalName("")
-
+                    .resume(resumeUrl)
+                    .resumeOriginalName(resumeOriginalName)
+                    .resumeText(resumeText)
                     .build();
 
-
-            User user=User.builder()
+            User user = User.builder()
                     .fullname(fullname)
                     .email(email)
                     .phoneNumber(phoneNumber)
@@ -73,17 +86,19 @@ public class UserService {
                     .role(role.toUpperCase())
                     .profile(profile)
                     .build();
-            saveUser(user);
 
+            saveUser(user);
             return user;
+
         } catch (IllegalArgumentException | IllegalStateException e) {
-            throw new Exception("Validation error: " + e.getMessage());
+            throw new Exception("Validation error: " + e.getMessage(), e);
         } catch (IOException e) {
-            throw new Exception("File upload failed: " + e.getMessage());
+            throw new Exception("File upload failed: " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new Exception("An unexpected error occurred: " + e.getMessage());
+            throw new Exception("An unexpected error occurred: " + e.getMessage(), e);
         }
     }
+
 
     private void saveUser(User user) {
         userRepository.save(user);
@@ -106,52 +121,106 @@ public class UserService {
     }
 
     public User updateUser(UpdateUserRequest updateRequest) throws Exception {
-
         User user = userRepository.findByEmail(updateRequest.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        try {
-            // Update basic fields
-            Profile profile = user.getProfile();
-            if (profile == null) {
-                profile = new Profile();
-            }
+        Profile profile = user.getProfile();
+        if (profile == null) {
+            profile = new Profile();
+            user.setProfile(profile);
+        }
 
+        try {
+            // ----- Update basic user fields -----
             if (updateRequest.getFullname() != null && !updateRequest.getFullname().isEmpty()) {
                 user.setFullname(updateRequest.getFullname());
             }
-            if(updateRequest.getPhoneNumber()!=null && !updateRequest.getPhoneNumber().isEmpty()){
+            if (updateRequest.getPhoneNumber() != null && !updateRequest.getPhoneNumber().isEmpty()) {
                 user.setPhoneNumber(updateRequest.getPhoneNumber());
             }
 
-            // Update profile details
-            if (updateRequest.getBio() != null) {
-                profile.setBio(updateRequest.getBio());
-            }
-            if (updateRequest.getSkills() != null) {
-                profile.setSkills(updateRequest.getSkills());
-            }
+            // ----- Update profile fields -----
+            if (updateRequest.getBio() != null) profile.setBio(updateRequest.getBio());
+            if (updateRequest.getSkills() != null) profile.setSkills(updateRequest.getSkills());
 
+            String resumeText = null;
+
+            // ----- Resume MultipartFile -----
             if (updateRequest.getResume() != null && !updateRequest.getResume().isEmpty()) {
-                profile.setResumeOriginalName(updateRequest.getResume().getOriginalFilename());
-                String resumeUrl = cloudinaryService.uploadPdf(updateRequest.getResume());
+                MultipartFile resumeFile = updateRequest.getResume();
+                profile.setResumeOriginalName(resumeFile.getOriginalFilename());
+
+                // Upload to Cloudinary
+                String resumeUrl = cloudinaryService.uploadPdf(resumeFile);
                 profile.setResume(resumeUrl);
+
+                // Parse resume text
+                resumeText = resumeParser.parse(resumeFile);
+                profile.setResumeText(resumeText);
+
+                // Auto-fill profile and user fields via Gemini
+                autoFillFromResumeText(user, profile, resumeText);
+
             }
+            // ----- Resume URL -----
             else if (updateRequest.getResumeUrl() != null && !updateRequest.getResumeUrl().isEmpty()) {
                 profile.setResume(updateRequest.getResumeUrl());
+                profile.setResumeOriginalName("from_url");
+
+                // Parse resume text from URL
+                resumeText = resumeParser.parseFromUrl(updateRequest.getResumeUrl());
+                profile.setResumeText(resumeText);
+
+                // Auto-fill profile and user fields via Gemini
+                autoFillFromResumeText(user, profile, resumeText);
             }
 
-            // Save updated profile
-            user.setProfile(profile);
-            saveUser(user);
+            // ----- Save user -----
+            return userRepository.save(user);
 
-            return user;
         } catch (IOException e) {
-            throw new Exception("File upload failed: " + e.getMessage());
+            throw new Exception("File upload failed: " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new Exception("Error updating user: " + e.getMessage());
+            throw new Exception("Error updating user: " + e.getMessage(), e);
         }
     }
+
+    private String cleanGeminiJson(String raw) {
+        if (raw == null) return "";
+
+        // Remove triple backticks and optional "json"
+        return raw.replaceAll("(?s)```json", "")
+                .replaceAll("(?s)```", "")
+                .trim();
+    }
+
+    private void autoFillFromResumeText(User user, Profile profile, String resumeText) {
+        if (resumeText == null || resumeText.isEmpty()) return;
+
+        try {
+            String geminiJson = geminiService.getStructuredProfile(resumeText);
+            geminiJson=cleanGeminiJson(geminiJson);
+            GeminiProfileData data = objectMapper.readValue(geminiJson, GeminiProfileData.class);
+
+            // Auto-fill user
+            if (data.getFullname() != null && !data.getFullname().isEmpty()) user.setFullname(data.getFullname());
+            if (data.getEmail() != null && !data.getEmail().isEmpty()) user.setEmail(data.getEmail());
+            if (data.getPhoneNumber() != null && !data.getPhoneNumber().isEmpty()) user.setPhoneNumber(data.getPhoneNumber());
+
+            // Auto-fill profile
+            if (data.getSkills() != null && !data.getSkills().isEmpty()) profile.setSkills(data.getSkills());
+            if (data.getBio() != null && !data.getBio().isEmpty()) profile.setBio(data.getBio());
+            if (data.getExperience() != null) profile.setExperience(data.getExperience());
+            if (data.getEducation() != null) profile.setEducation(data.getEducation());
+
+        } catch (Exception ignored) {
+            // fail silently if Gemini fails
+            System.out.println(ignored.getMessage());
+            throw new RuntimeException(ignored.getMessage());
+        }
+    }
+
+
 
 
 
