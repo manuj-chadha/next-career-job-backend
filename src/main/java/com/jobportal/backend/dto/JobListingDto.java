@@ -20,6 +20,7 @@ public class JobListingDto {
     private int experience;
     private String companyName;
     private String companyLogo;
+    private String companyWebsite;
     private Instant createdAt;
 
     public static JobListingDto fromEntity(Job job) {
@@ -32,6 +33,7 @@ public class JobListingDto {
                 .experience(job.getExperience())
                 .companyName(job.getCompany().getName())
                 .companyLogo(job.getCompany().getLogo())
+                .companyWebsite(job.getCompany().getWebsite())
                 .createdAt(job.getCreatedAt())
                 .build();
     }

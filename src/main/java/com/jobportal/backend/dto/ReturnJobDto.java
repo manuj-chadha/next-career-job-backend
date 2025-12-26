@@ -25,6 +25,7 @@ public class ReturnJobDto {
     private String position;
     private String companyName;
     private String companyLogo;
+    private String companyWebsite;
     private String companyDescription;
     private Instant createdAt;
 
@@ -42,6 +43,7 @@ public class ReturnJobDto {
                 .companyName(job.getCompany() != null ? job.getCompany().getName() : null)
                 .companyLogo(job.getCompany() != null ? job.getCompany().getLogo() : null)
                 .companyDescription(job.getCompany() != null ? job.getCompany().getDescription() : null)
+                .companyWebsite(job.getCompany() != null ? job.getCompany().getWebsite() : null)
                 .createdAt(job.getCreatedAt())
                 .build();
     }
